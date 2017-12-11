@@ -2,6 +2,7 @@ from numpy import array, zeros, argmin, inf, equal, ndim
 from scipy.spatial.distance import cdist
 import numpy as np
 
+'''Compute distance matix given my query and my input string'''
 def computeDistanceMatrix(x,y):
 	r,c = len(x), len(y)
 	distance_matrix = np.zeros(shape=(r,c))  
@@ -11,13 +12,13 @@ def computeDistanceMatrix(x,y):
 				distance_matrix[i][j] = 1
 	return distance_matrix
 
-
+'''Compute the cost matrix and trace the paths from the cost matrix'''
 def dtw(distance_matrix):
 	#import pdb;pdb.set_trace()
 	m, n = np.shape(distance_matrix)
 	cost = np.zeros(shape = np.shape(distance_matrix))
 	cost[0,:] = distance_matrix[0,:]
-	cost[:,0] = distance_matrix[:,0]
+	cost[:,0] = np.cumsum(distance_matrix[:,0])
 	#Traceback initialization
 	
 	traceback_indexes = np.zeros(shape=(m, n))
@@ -30,14 +31,55 @@ def dtw(distance_matrix):
 			cost[i,j] = distance_matrix[i,j] + minimum_value
 	return cost,traceback_indexes
 
+'''Traceback function without applying the minimum cost heuristic in the last row'''
+# def traceback(cost_matrix, traceback_indexes):
+
+# 	 #Traceback indices are 0 for diagnol, 1 for vertical and 2 for horizontal
+#     #import pdb;pdb.set_trace()
+#     #min_value = min(cost_matrix[np.shape(cost_matrix)[0]-1,1:])
+#     cost_array = cost_matrix[np.shape(cost_matrix)[0]-1,1:]
+#     #min_index = np.argmin(cost_matrix[np.shape(cost_matrix)[0]-1,1:])
+#     #indices = np.where(cost_array==min_value)
+#     max_length = 0
+#     costs = []
+#     path_lengths = []
+
+#     for k in range(1,len(cost_array)):
+#         i, j1 = np.shape(cost_matrix)[0]-1,k
+#         path_row, path_column = find_path(i, j1, traceback_indexes)
+#         costs.append(cost_array[k]/len(path_row))
+#         path_lengths.append(len(path_row))
+#         # if(len(path_row)>max_length):
+#     	   #  max_length = len(path_row)
+#     	   #  p_new = path_row
+#     	   #  q_new = path_column
+#     return costs, path_lengths, cost_array
+
+#FTraceback function by applying the minimum cost heuristic in the last row.
 def traceback(cost_matrix, traceback_indexes):
 
 	 #Traceback indices are 0 for diagnol, 1 for vertical and 2 for horizontal
+    #import pdb;pdb.set_trace()
+    min_value = min(cost_matrix[np.shape(cost_matrix)[0]-1,1:])
+    cost_array = cost_matrix[np.shape(cost_matrix)[0]-1,1:]
+    #min_index = np.argmin(cost_matrix[np.shape(cost_matrix)[0]-1,1:])
+    indices = np.where(cost_array==min_value)
+    max_length = 0
+    costs = []
+    path_lengths = []
+
+    for k in range(len(indices[0])):
+        i, j1 = np.shape(cost_matrix)[0]-1,indices[0][k]+1
+        path_row, path_column = find_path(i, j1, traceback_indexes)
+        costs.append(min_value/len(path_row))
+        path_lengths.append(len(path_row))
+ 
+    return costs, path_lengths, cost_array
+
+
+'''Find path given the indices of the last row using the traceback indices'''
+def find_path(i, j1, traceback_indexes):
 	#import pdb;pdb.set_trace()
-	min_value = min(cost_matrix[np.shape(cost_matrix)[0]-1,1:])
-	min_index = np.argmin(cost_matrix[np.shape(cost_matrix)[0]-1,1:])
-	i, j1 = np.shape(cost_matrix)[0]-1,min_index+1
-	 #p = [np.shape(cost_matrix)[0]-1,min_index]
 	p_new, q_new = [i], [j1]
 	while(i>0 and j1>0):
 		new_index = traceback_indexes[i,j1]
@@ -52,155 +94,3 @@ def traceback(cost_matrix, traceback_indexes):
 	 	q_new.insert(0,j1)
 	return array(p_new), array(q_new)
 
-
-
-# 	 path = np.array(p)
-# 	 while(p[0][0]>0):
-
-# def _traceback(D):
-#     i, j = array(D.shape) - 2
-#     p, q = [i], [j]
-#     while ((i > 0) or (j > 0)):
-#         tb = argmin((D[i, j], D[i, j+1], D[i+1, j]))
-#         if (tb == 0):
-#             i -= 1
-#             j -= 1
-#         elif (tb == 1):
-#             i -= 1
-#         else: # (tb == 2):
-#             j -= 1
-#         p.insert(0, i)
-#         q.insert(0, j)
-#     return array(p), array(q)
-
-
-
-
-
-
-# def dtw(distance_matrix):
-#     """
-#     Computes Dynamic Time Warping (DTW) of two sequences.
-
-#     :param array x: N1*M array
-#     :param array y: N2*M array
-#     :param func dist: distance used as cost measure
-
-#     Returns the minimum distance, the cost matrix, the accumulated cost matrix, and the wrap path.
-#     """
-#     #assert len(x)
-#     #assert len(y)
-#     r, c = np.shape(distance_matrix)
-#     D0 = zeros((r + 1, c + 1))
-#     D0[0, 1:] = inf
-#     D0[1:, 0] = inf
-#     D1 = distance_matrix[1:, 1:] # view
-#     # for i in range(r):
-#     #     for j in range(c):
-#     #         D1[i, j] = dist(x[i], y[j])
-#     # C = D1.copy()
-#     for i in range(r):
-#         for j in range(c):
-#             D1[i, j] += min(D0[i, j], D0[i, j+1], D0[i+1, j])
-#     # if len(x)==1:
-#     #     path = zeros(len(y)), range(len(y))
-#     # elif len(y) == 1:
-#     #     path = range(len(x)), zeros(len(x))
-#     # else:
-#     path = _traceback(D0)
-#     return D1[-1, -1] / sum(D1.shape), C, D1, path
-
-# def fastdtw(x, y, dist):
-#     """
-#     Computes Dynamic Time Warping (DTW) of two sequences in a faster way.
-#     Instead of iterating through each element and calculating each distance,
-#     this uses the cdist function from scipy (https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.cdist.html)
-
-#     :param array x: N1*M array
-#     :param array y: N2*M array
-#     :param string or func dist: distance parameter for cdist. When string is given, cdist uses optimized functions for the distance metrics.
-#     If a string is passed, the distance function can be 'braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'wminkowski', 'yule'.
-#     Returns the minimum distance, the cost matrix, the accumulated cost matrix, and the wrap path.
-#     """
-#     assert len(x)
-#     assert len(y)
-#     if ndim(x)==1:
-#         x = x.reshape(-1,1)
-#     if ndim(y)==1:
-#         y = y.reshape(-1,1)
-#     r, c = len(x), len(y)
-#     D0 = zeros((r + 1, c + 1))
-#     D0[0, 1:] = inf
-#     D0[1:, 0] = inf
-#     D1 = D0[1:, 1:]
-#     D0[1:,1:] = cdist(x,y,dist)
-#     C = D1.copy()
-#     for i in range(r):
-#         for j in range(c):
-#             D1[i, j] += min(D0[i, j], D0[i, j+1], D0[i+1, j])
-#     if len(x)==1:
-#         path = zeros(len(y)), range(len(y))
-#     elif len(y) == 1:
-#         path = range(len(x)), zeros(len(x))
-#     else:
-#         path = _traceback(D0)
-#     return D1[-1, -1] / sum(D1.shape), C, D1, path
-
-# def _traceback(D):
-#     i, j = array(D.shape) - 2, 
-#     p, q = [i], [j]
-#     while ((i > 0)):
-#         tb = argmin((D[i, j], D[i, j+1], D[i+1, j]))
-#         if (tb == 0):
-#             i -= 1
-#             j -= 1
-#         elif (tb == 1):
-#             i -= 1
-#         else: # (tb == 2):
-#             j -= 1
-#         p.insert(0, i)
-#         q.insert(0, j)
-#     return array(p), array(q)
-
-# #import pdb;pdb.set_trace()
-# from sklearn.metrics.pairwise import euclidean_distances
-# x = [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2], [4, 3], [2, 3], [1, 1], [2, 2], [0, 1]]
-# y = [[1, 0], [1, 1], [1, 1], [2, 1], [4, 3], [4, 3], [2, 3], [3, 1], [1, 2], [1, 0]]
-# dist_fun = euclidean_distances
-# dist, cost, acc, path = dtw(x, y, dist_fun)
-# from matplotlib import pyplot as plt
-# plt.imshow(cost.T, origin='lower', cmap=plt.cm.Reds, interpolation='nearest')
-# if __name__ == '__main__':
-
-#     if 0: # 1-D numeric
-#         from sklearn.metrics.pairwise import manhattan_distances
-#         x = [0, 0, 1, 1, 2, 4, 2, 1, 2, 0]
-#         y = [1, 1, 1, 2, 2, 2, 2, 3, 2, 0]
-#         dist_fun = manhattan_distances
-#     elif 0: # 2-D numeric
-#         from sklearn.metrics.pairwise import euclidean_distances
-#         x = [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2], [4, 3], [2, 3], [1, 1], [2, 2], [0, 1]]
-#         y = [[1, 0], [1, 1], [1, 1], [2, 1], [4, 3], [4, 3], [2, 3], [3, 1], [1, 2], [1, 0]]
-#         dist_fun = euclidean_distances
-#     else: # 1-D list of strings
-#         from nltk.metrics.distance import edit_distance
-#         #x = ['we', 'shelled', 'clams', 'for', 'the', 'chowder']
-#         #y = ['class', 'too']
-#         x = ['i', 'soon', 'found', 'myself', 'muttering', 'to', 'the', 'walls']
-#         y = ['see', 'drown', 'himself']
-#         #x = 'we talked about the situation'.split()
-#         #y = 'we talked about the situation'.split()
-#         dist_fun = edit_distance
-#     dist, cost, acc, path = dtw(x, y, dist_fun)
-
-#     # vizualize
-#     from matplotlib import pyplot as plt
-#     plt.imshow(cost.T, origin='lower', cmap=plt.cm.Reds, interpolation='nearest')
-#     plt.plot(path[0], path[1], '-o') # relation
-#     plt.xticks(range(len(x)), x)
-#     plt.yticks(range(len(y)), y)
-#     plt.xlabel('x')
-#     plt.ylabel('y')
-#     plt.axis('tight')
-#     plt.title('Minimum distance: {}'.format(dist))
-#     plt.show()
